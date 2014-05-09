@@ -30,7 +30,7 @@ instance FromJSON User where
 
     parseJSON _ = mzero
 
-genFixtures "User" "runner"
+genFixturesFrom "tests/fixtures/user.yml" "User" "runner"
 
 runner m = runSqlite ":memory:" (runMigration migrateAll >> m)
 

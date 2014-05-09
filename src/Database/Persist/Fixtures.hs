@@ -3,7 +3,7 @@
 
 module Database.Persist.Fixtures (
     genFixtures,
-    genFixtureFrom
+    genFixturesFrom
 ) where
 
 import Control.Exception.Lifted
@@ -32,17 +32,17 @@ import Text.Printf
 -}
 
 genFixtures :: String -> String -> Q [Dec]
-genFixtures name' runner' = do
+genFixtures name runner = do
+    let filename = psToDBName lowerCaseSettings (pack name)
+        fp = "fixtures" </> unpack filename <.> "yml"
+    genFixturesFrom fp name runner
+
+genFixturesFrom :: FilePath -> String -> String -> Q [Dec]
+genFixturesFrom fp name' runner' = do
     let name = mkName name'
         runner = mkName runner'
-        filename = psToDBName lowerCaseSettings (pack name')
-        fp = "fixtures" </> unpack filename <.> "yml"
-    genFixtureFrom fp name runner
-
-genFixtureFrom :: FilePath -> Name -> Name -> Q [Dec]
-genFixtureFrom fp name runner = do
-    let loadAllName = mkName $ printf "withAll%sFixtures" (unName name)
-        loadSomeName = mkName $ printf "with%sFixtures" (unName name)
+        loadAllName = mkName $ printf "withAll%sFixtures" name'
+        loadSomeName = mkName $ printf "with%sFixtures" name'
     requireInstance name ''FromJSON
     requireInstance name ''PersistEntity
     contents <- runIO $ readFile fp

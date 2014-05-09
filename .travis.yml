@@ -1,0 +1,22 @@
+language: haskell
+
+before_install:
+  - |
+    sudo add-apt-repository -y ppa:hvr/ghc
+    sudo apt-get update
+    sudo apt-get install cabal-install-1.20 ghc-$ghc libicu-dev coffeescript
+    export CABAL=cabal-1.20
+    export PATH=/opt/ghc/$ghc/bin:$PATH
+    $CABAL update
+
+install:
+  - $CABAL install $mode --only-dependencies
+  - $CABAL configure $mode
+
+script:
+  - hlint -c src -XQuasiQuotes
+  - $CABAL test
+
+env:
+  - mode="--enable-tests" ghc=7.8.2 PATH=$HOME/.cabal/bin:$PATH
+  - mode="--enable-tests" ghc=7.6.3 PATH=$HOME/.cabal/bin:$PATH
