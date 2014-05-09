@@ -1,0 +1,5 @@
+- name: Joel
+  alive: true
+
+- name: Gandhi
+  alive: false
