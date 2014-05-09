@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -ddump-splices #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,7 +7,6 @@
 
 import Control.Applicative
 import Control.Monad
-import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Resource
 import Data.Aeson
@@ -38,12 +36,12 @@ genFixturesFrom "tests/fixtures/user.yml" "User" "runner"
 
 main :: IO ()
 main = do
-    counts <- runTestTT $ TestList
+    cs <- runTestTT $ TestList
         [TestLabel "all" $ TestCase $ withAllUserFixtures $ \ ks ->
             assertBool "length" $ length ks == 2
         , TestLabel "filtering" $ TestCase $ withUserFixtures userAlive $ \ us ->
             assertBool "alive" (all (userAlive . entityVal) us)
         ]
-    when (errors counts > 0 || failures counts > 0) $ do
-        print counts
+    when (errors cs > 0 || failures cs > 0) $ do
+        print cs
         exitFailure
