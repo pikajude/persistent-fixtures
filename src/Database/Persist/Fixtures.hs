@@ -20,16 +20,11 @@ module Database.Persist.Fixtures (
 ) where
 
 import Control.Exception.Lifted
-import Control.Monad.Catch (MonadThrow)
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Control
-import qualified Data.ByteString as B
 import Data.String
 import Data.Text (pack, unpack)
 import Data.Yaml
 import Database.Persist
 import Database.Persist.Quasi
-import Database.Persist.Sql
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import System.FilePath
@@ -125,7 +120,7 @@ genFixturesFrom fp name' runner' = do
     --
     -- this way it can't get at the types until splice time so it's happy.
     let mapInsert = appE (varE 'mapM) (varE 'insert)
-        delete = appE (varE 'deleteWhere) [| [] :: [Filter $(conT name)] |]
+        del = appE (varE 'deleteWhere) [| [] :: [Filter $(conT name)] |]
 
     let parseAndInsert =
             [| \ fltr action -> do
@@ -133,16 +128,15 @@ genFixturesFrom fp name' runner' = do
                          (decodeEither (fromString $(stringE contents))) :: [$(conT name)]
             keys <- $(varE runner) ($(mapInsert) entities)
             action (zipWith Entity keys entities) `finally`
-                ($(varE runner) $(delete)) |]
+                ($(varE runner) $(del)) |]
     someFun <- funD loadSomeName [clause [] (normalB parseAndInsert) []]
-    someTy <- sigD loadSomeName
-              [t| (Monad m, MonadBaseControl IO m, MonadThrow m, MonadIO m)
-                  => ($(conT name) -> Bool) -> ([Entity $(conT name)] -> m b) -> m b |]
+    -- someTy <- sigD loadSomeName
+    --           [t| ($(conT name) -> Bool) -> ([Entity $(conT name)] -> $(ty)) -> $(ty) |]
     fun <- funD loadAllName
         [clause [] (normalB [| $(varE loadSomeName) (const True) |]) []]
-    ty <- sigD loadAllName
-              [t| (Monad m, MonadBaseControl IO m, MonadThrow m, MonadIO m)
-                  => ([Entity $(conT name)] -> m b) -> m b |]
+    -- ty <- sigD loadAllName
+    --           [t| (Monad m, MonadBaseControl IO m, MonadThrow m, MonadIO m)
+    --               => ([Entity $(conT name)] -> m b) -> m b |]
     return [someFun, fun] -- [someTy, someFun, ty, fun]
     where
         requireInstance n c = do
