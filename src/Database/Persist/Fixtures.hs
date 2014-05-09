@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -97,17 +98,42 @@ genFixturesFrom fp name' runner' = do
         runner = mkName runner'
         loadAllName = mkName $ printf "withAll%sFixtures" name'
         loadSomeName = mkName $ printf "with%sFixtures" name'
+
+    -- require some instances (more user-friendly to exit early)
     requireInstance name ''FromJSON
     requireInstance name ''PersistEntity
+
     contents <- runIO $ readFile fp
         `catchIOError` (\ e -> error $ "Unable to open fixtures file: " ++ show e)
+
+    -- note to future me: why aren't mapInsert and delete
+    -- 1. expression quotes and
+    -- 2. just inserted into parseAndInsert?
+    --
+    -- something about the expression "mapM insert" appears to confuse GHC
+    -- during TH splicing:
+    --
+    --   Couldn't match expected type `PersistEntityBackend b0'
+    --               with actual type `PersistMonadBackend m1'
+    --
+    -- where insert :: (PersistStore m, PersistEntity val,
+    --                  PersistMonadBackend m ~ PersistEntityBackend val)
+    --                  => ...
+    --
+    -- GHC seems to want to resolve the type equality when it evaluates the
+    -- splice, rather than when it actually splices it.
+    --
+    -- this way it can't get at the types until splice time so it's happy.
+    let mapInsert = appE (varE 'mapM) (varE 'insert)
+        delete = appE (varE 'deleteWhere) [| [] :: [Filter $(conT name)] |]
+
     let parseAndInsert =
             [| \ fltr action -> do
             let entities = either error (filter fltr)
-                         $ decodeEither (fromString $(stringE contents))
-            keys <- $(varE runner) $ mapM insert entities
+                         (decodeEither (fromString $(stringE contents)))
+            keys <- $(varE runner) ($(mapInsert) entities)
             action (zipWith Entity keys entities) `finally`
-                ($(varE runner) $ deleteWhere ([] :: [Filter $(conT name)])) |]
+                ($(varE runner) $(delete)) |]
     someFun <- funD loadSomeName [clause [] (normalB parseAndInsert) []]
     someTy <- sigD loadSomeName
               [t| (Monad m, MonadBaseControl IO m, MonadThrow m, MonadIO m)
