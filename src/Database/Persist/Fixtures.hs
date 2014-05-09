@@ -130,7 +130,7 @@ genFixturesFrom fp name' runner' = do
     let parseAndInsert =
             [| \ fltr action -> do
             let entities = either error (filter fltr)
-                         (decodeEither (fromString $(stringE contents)))
+                         (decodeEither (fromString $(stringE contents))) :: [$(conT name)]
             keys <- $(varE runner) ($(mapInsert) entities)
             action (zipWith Entity keys entities) `finally`
                 ($(varE runner) $(delete)) |]
@@ -143,7 +143,7 @@ genFixturesFrom fp name' runner' = do
     ty <- sigD loadAllName
               [t| (Monad m, MonadBaseControl IO m, MonadThrow m, MonadIO m)
                   => ([Entity $(conT name)] -> m b) -> m b |]
-    return [someTy, someFun, ty, fun]
+    return [someFun, fun] -- [someTy, someFun, ty, fun]
     where
         requireInstance n c = do
             ins <- reifyInstances c [ConT n]

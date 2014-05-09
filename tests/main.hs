@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -ddump-splices #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,6 +9,8 @@
 import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Logger
+import Control.Monad.Trans.Resource
 import Data.Aeson
 import Database.Persist.Fixtures
 import Database.Persist.Sqlite
@@ -28,9 +31,10 @@ instance FromJSON User where
 
     parseJSON _ = mzero
 
-genFixturesFrom "tests/fixtures/user.yml" "User" "runner"
-
+runner :: SqlPersistT (NoLoggingT (ResourceT IO)) a -> IO a
 runner m = runSqlite ":memory:" (runMigration migrateAll >> m)
+
+genFixturesFrom "tests/fixtures/user.yml" "User" "runner"
 
 main :: IO ()
 main = do

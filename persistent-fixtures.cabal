@@ -32,8 +32,10 @@ test-suite tests
   build-depends:    aeson
                   , base
                   , HUnit
+                  , monad-logger, resourcet
                   , persistent-fixtures
                   , persistent-sqlite
                   , persistent-template
                   , transformers
   default-language: Haskell2010
+  ghc-options:      -Wall
