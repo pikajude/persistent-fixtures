@@ -119,6 +119,8 @@ genFixturesFrom fp name' runner' = do
     -- splice, rather than when it actually splices it.
     --
     -- this way it can't get at the types until splice time so it's happy.
+    --
+    -- NB. only applies to 7.6.3, can probably remove soon
     let mapInsert = appE (varE 'mapM) (varE 'insert)
         del = appE (varE 'deleteWhere) [| [] :: [Filter $(conT name)] |]
 
