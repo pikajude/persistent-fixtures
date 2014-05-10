@@ -50,14 +50,14 @@ import Text.Printf
 --
 -- will define two new functions:
 --
--- @withUserFixtures :: ('Monad' m, 'MonadBaseControl' 'IO' m, 'MonadThrow' m, 'MonadIO' m) => (User -> 'Bool') -> (['Entity' User] -> m b) -> m b@
+-- @withUserFixtures :: (User -> 'Bool') -> (['Entity' User] -> m b) -> m b@
 --
 -- @withUserFixtures filter action@ runs @action@, having loaded all of the
 -- entities which satisfy @filter@. @action@ is passed a list of the
 -- inserted entities. The entities will be deleted after @action@
 -- completes, even if it throws an exception.
 --
--- @withAllUserFixtures :: ('Monad' m, 'MonadBaseControl' 'IO' m, 'MonadThrow' m, 'MonadIO' m) => (['Entity' User] -> m b) -> m b@
+-- @withAllUserFixtures :: (['Entity' User] -> m b) -> m b@
 --
 -- @withAllUserFixtures@ is just @withUserFixtures (const True)@; it loads
 -- all the defined fixtures.
