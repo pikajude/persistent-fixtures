@@ -145,4 +145,4 @@ genFixturesFrom fp name' runner' = do
                 _ -> return ()
 
 unName :: Name -> String
-unName (Name (OccName s) _) = s
+unName (Name o _) = occString o
