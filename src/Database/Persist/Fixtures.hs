@@ -132,14 +132,9 @@ genFixturesFrom fp name' runner' = do
             action (zipWith Entity keys entities) `finally`
                 ($(varE runner) $(del)) |]
     someFun <- funD loadSomeName [clause [] (normalB parseAndInsert) []]
-    -- someTy <- sigD loadSomeName
-    --           [t| ($(conT name) -> Bool) -> ([Entity $(conT name)] -> $(ty)) -> $(ty) |]
     fun <- funD loadAllName
         [clause [] (normalB [| $(varE loadSomeName) (const True) |]) []]
-    -- ty <- sigD loadAllName
-    --           [t| (Monad m, MonadBaseControl IO m, MonadThrow m, MonadIO m)
-    --               => ([Entity $(conT name)] -> m b) -> m b |]
-    return [someFun, fun] -- [someTy, someFun, ty, fun]
+    return [someFun, fun]
     where
         requireInstance n c = do
             ins <- reifyInstances c [ConT n]
