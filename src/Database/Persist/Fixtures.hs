@@ -98,6 +98,11 @@ genFixturesFrom fp name' runner' = do
     requireInstance name ''FromJSON
     requireInstance name ''PersistEntity
 
+    VarI _ t _ _ <- reify runner
+    let runReturnTy = underForall applyOne t
+        someTy = underForall (makeCallback name True) runReturnTy
+        allTy = underForall (makeCallback name False) runReturnTy
+
     contents <- runIO $ readFile fp
         `catchIOError` (\ e -> error $ "Unable to open fixtures file: " ++ show e)
 
@@ -132,9 +137,11 @@ genFixturesFrom fp name' runner' = do
             action (zipWith Entity keys entities) `finally`
                 ($(varE runner) $(del)) |]
     someFun <- funD loadSomeName [clause [] (normalB parseAndInsert) []]
+    let someFunTy = SigD loadSomeName someTy
+        allFunTy = SigD loadAllName allTy
     fun <- funD loadAllName
         [clause [] (normalB [| $(varE loadSomeName) (const True) |]) []]
-    return [someFun, fun]
+    return [someFunTy, someFun, allFunTy, fun]
     where
         requireInstance n c = do
             ins <- reifyInstances c [ConT n]
@@ -143,6 +150,21 @@ genFixturesFrom fp name' runner' = do
                     printf "To be used in fixtures, `%s' must be an instance of %s."
                                   (unName n) (unName c)
                 _ -> return ()
+
+        underForall f (ForallT ts cx t) = ForallT ts cx (f t)
+        underForall f t = f t
+
+        applyOne (AppT _ t) = t
+        applyOne _ = undefined
+
+        makeCallback name withFilter t = applyFilter continuationType where
+            modelType = ConT name
+            entListType = AppT ListT (AppT (ConT ''Entity) modelType)
+            continuationType = AppT
+                (AppT ArrowT (AppT (AppT ArrowT entListType) t)) t
+            applyFilter = if withFilter
+                then AppT (AppT ArrowT (AppT (AppT ArrowT modelType) (ConT ''Bool)))
+                else id
 
 unName :: Name -> String
 unName (Name (OccName s) _) = s

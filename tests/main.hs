@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -ddump-splices #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -29,7 +30,6 @@ instance FromJSON User where
 
     parseJSON _ = mzero
 
-runner :: SqlPersistT (NoLoggingT (ResourceT IO)) a -> IO a
 runner m = runSqlite ":memory:" (runMigration migrateAll >> m)
 
 genFixturesFrom "tests/fixtures/user.yml" "User" "runner"
